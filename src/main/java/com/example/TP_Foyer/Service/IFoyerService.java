@@ -11,3 +11,4 @@ public interface IFoyerService {
     Foyer getById(Long id);
     Foyer ajouterFoyerEtAffecterAUniversite(Foyer foyer, long idUniversite);
 }
+//test
