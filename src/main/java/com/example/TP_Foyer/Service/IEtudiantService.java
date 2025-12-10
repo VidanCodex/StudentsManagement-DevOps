@@ -9,5 +9,6 @@ public interface IEtudiantService {
     void delete(Long id);
     List<Etudiant> getAll();
     Etudiant getById(Long id);
+    List<Etudiant> getEtudiantsAvecReservationValideParAnnee(int annee);
+    List<Etudiant> getEtudiantsSansReservations();
 }
-

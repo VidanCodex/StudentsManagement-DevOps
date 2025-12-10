@@ -23,4 +23,7 @@ public interface IChambreService {
 
     List<Chambre> getChambresNonReserveParNomUniversiteEtTypeChambre(String nomUniversite, TypeChambre type);
 
+    java.util.List<Object[]> countChambresParTypeDansUniversite(String nomUniversite);
+
+    java.util.List<Chambre> getChambresDisponiblesSansReservationValide();
 }

@@ -1,0 +1,97 @@
+🎯 Règle Fondamentale du mappedBy :
+
+       **     mappedBy se met toujours du côté qui NE possède PAS la clé étrangère (Foreign Key)
+
+
+🎓 Règles pratiques pour le test
+Relation bidirectionnelle @OneToMany / @ManyToOne :
+
+✅ Le côté @ManyToOne (FILS) utilise @JoinColumn (possède la FK)
+✅ Le côté @OneToMany (PARENT) utilise mappedBy
+
+Relation bidirectionnelle @ManyToMany :
+
+✅ Un seul côté crée la table de jointure (sans mappedBy)
+✅ L'autre côté utilise mappedBy
+
+Relation unidirectionnelle :
+
+❌ PAS de mappedBy du tout !
+Exemple : Si seulement Foyer connaît Bloc (mais pas l'inverse), on ne met pas mappedBy
+
+
+
+
+
+
+
+
+📌 Quand utiliser KEYWORDS ?
+✅ Utilisez les Keywords pour :
+1️⃣ Recherches simples sur UN attribut
+java// Trouver un étudiant par CIN
+Etudiant findByCin(Long cin);
+
+// Trouver un foyer par nom
+Foyer findByNomFoyer(String nom);
+
+// Trouver des blocs par capacité
+List<Bloc> findByCapaciteBloc(Long capacite);
+Pourquoi Keywords ?
+
+✅ Une seule ligne, pas besoin d'écrire la requête
+✅ Facile à lire et comprendre
+✅ Spring fait tout automatiquement
+
+
+2️⃣ Recherches avec 2-3 conditions simples (AND/OR)
+java// Trouver un étudiant par nom ET prénom
+Etudiant findByNomEtAndPrenomEt(String nom, String prenom);
+
+// Trouver des étudiants par école OU nom
+List<Etudiant> findByEcoleOrNomEt(String ecole, String nom);
+Pourquoi Keywords ?
+
+✅ Conditions simples, pas de JOIN
+✅ Code court et clair
+
+
+3️⃣ Comparaisons simples (>, <, BETWEEN, LIKE)
+java// Capacité supérieure à X
+List<Foyer> findByCapaciteFoyerGreaterThan(Long capacite);
+
+// Nom qui contient X
+List<Etudiant> findByNomEtContaining(String nom);
+
+// Date entre deux dates
+List<Reservation> findByAnneeUniversitaireBetween(Date debut, Date fin);
+Pourquoi Keywords ?
+
+✅ Opérations standards déjà supportées
+✅ Pas besoin d'écrire SQL/JPQL
+
+
+📌 Quand utiliser JPQL ?
+✅ Utilisez JPQL pour :
+1️⃣ Requêtes avec JOIN (naviguer entre entités liées)
+Exemple : Trouver tous les Foyers qui ont un Bloc nommé "Bloc A"
+❌ Impossible avec Keywords (trop complexe)
+✅ Facile avec JPQL :
+java@Query("SELECT f FROM Foyer f JOIN f.blocs b WHERE b.nomBloc = :nomBloc")
+List<Foyer> findFoyersByBlocName(@Param("nomBloc") String nomBloc);
+
+Autre exemple : Trouver tous les Blocs qui ont des Chambres de type TRIPLE
+java@Query("SELECT DISTINCT b FROM Bloc b JOIN b.chambres c WHERE c.typeC = 'TRIPLE'")
+List<Bloc> findBlocsWithTripleRooms();
+Pourquoi JPQL ?
+
+✅ Vous devez naviguer à travers plusieurs relations (Bloc → Chambre)
+✅ Keywords ne peut pas gérer cette complexité
+
+
+2️⃣ Agrégations (COUNT, SUM, AVG, MAX, MIN)
+Exemple : Compter le nombre de Blocs dans un Foyer
+❌ Keywords ne supporte pas COUNT directement
+✅ JPQL :
+java@Query("SELECT COUNT(b) FROM Bloc b WHERE b.foyer.idFoyer = :idFoyer")
+Long countBlocsByFoyer(@Param("idFoyer") Long idFoyer);

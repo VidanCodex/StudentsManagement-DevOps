@@ -76,4 +76,14 @@ public class ChambreService implements IChambreService {
                         c.getReservations().stream().noneMatch(r -> r.getEstValide() != null && r.getEstValide()))
                 .collect(java.util.stream.Collectors.toList());
     }
+
+    @Override
+    public List<Object[]> countChambresParTypeDansUniversite(String nomUniversite) {
+        return chambreRepository.countChambresParTypeDansUniversite(nomUniversite);
+    }
+
+    @Override
+    public List<Chambre> getChambresDisponiblesSansReservationValide() {
+        return chambreRepository.findChambresSansReservationValide();
+    }
 }

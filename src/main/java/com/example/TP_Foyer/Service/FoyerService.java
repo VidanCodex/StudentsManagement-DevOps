@@ -67,4 +67,13 @@ public class FoyerService implements IFoyerService {
 
         return foyerRepository.findById(savedFoyer.getIdFoyer()).orElse(savedFoyer);
     }
+
+    @Override
+    public Foyer getFoyerAvecMaxChambres() {
+        java.util.List<Foyer> foyers = foyerRepository.findFoyersOrderByNombreChambresDesc();
+        if (foyers.isEmpty()) {
+            throw new RuntimeException("Aucun foyer trouvé");
+        }
+        return foyers.get(0);
+    }
 }

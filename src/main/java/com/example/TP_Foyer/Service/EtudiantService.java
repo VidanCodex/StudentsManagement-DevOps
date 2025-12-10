@@ -39,4 +39,14 @@ public class EtudiantService implements IEtudiantService {
     public Etudiant getById(Long id) {
         return etudiantRepository.findById(id).orElseThrow(() -> new RuntimeException("Etudiant not found"));
     }
+
+    @Override
+    public List<Etudiant> getEtudiantsAvecReservationValideParAnnee(int annee) {
+        return etudiantRepository.findEtudiantsAvecReservationValideParAnnee(annee);
+    }
+
+    @Override
+    public List<Etudiant> getEtudiantsSansReservations() {
+        return etudiantRepository.findEtudiantsSansReservations();
+    }
 }

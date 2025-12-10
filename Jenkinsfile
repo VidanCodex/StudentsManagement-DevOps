@@ -1,50 +1,123 @@
 pipeline {
     agent any
 
-    tools {
-        jdk 'JAVA_HOME'
-        maven 'M2_HOME'
-    }
-
     environment {
-        
-        IMAGE_NAME = 'vidancodex/alpine'
-        IMAGE_TAG  = '1.0.0'
+        DOCKER_IMAGE = "vidancodex/tp-foyer"
+        DOCKER_TAG = "${env.BUILD_NUMBER}"
+        NAMESPACE = "devops"
     }
 
     stages {
-        stage('GIT') {
+        stage('1. Récupération du code') {
             steps {
-                git branch: 'master',
-                    url: 'https://github.com/VidanCodex/StudentsManagement-DevOps.git'
+                echo '📥 Récupération du code depuis Git...'
+                checkout scm
             }
         }
 
-        stage('Compile Stage') {
+        stage('2. Nettoyage') {
             steps {
-                sh 'mvn clean compile'
+                echo '🧹 Nettoyage de l environnement...'
+                sh '''
+                    docker system prune -f || true
+                    rm -rf target/ || true
+                '''
             }
         }
 
-        stage('Docker Build') {
+        stage('3. Vérification du projet') {
             steps {
-                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                echo '🔍 Vérification du projet...'
+                sh '''
+                    echo "=== Structure du projet ==="
+                    ls -la
+                    echo ""
+                    echo "=== Fichiers Kubernetes ==="
+                    ls -la k8s/ || echo "Dossier k8s/ non trouvé"
+                '''
             }
         }
 
-        stage('Docker Push') {
-    steps {
-        withCredentials([usernamePassword(
-            credentialsId: 'docker-hub-credentials',
-            usernameVariable: 'DOCKER_USER',
-            passwordVariable: 'DOCKER_PASS'
-        )]) {
-            sh """
-              echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
-              docker push ${IMAGE_NAME}:${IMAGE_TAG}
-            """
+        stage('4. Construction de l image Docker') {
+            steps {
+                echo '🐳 Construction de l image Docker...'
+                sh """
+                    docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                    docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+                    echo "Images créées:"
+                    docker images | grep ${DOCKER_IMAGE}
+                """
+            }
+        }
+
+        stage('5. Publication sur Docker Hub') {
+            steps {
+                echo '📤 Publication sur Docker Hub...'
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-hub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh """
+                        echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        docker push ${DOCKER_IMAGE}:latest
+                        docker logout
+                        echo "✓ Images publiées sur Docker Hub"
+                    """
+                }
+            }
+        }
+
+        stage('6. Déploiement sur Kubernetes') {
+            steps {
+                echo '☸️ Déploiement sur Kubernetes...'
+                sh """
+                    echo "=== Vérification de la connexion Kubernetes ==="
+                    kubectl get nodes
+
+                    echo ""
+                    echo "=== Déploiement MySQL ==="
+                    kubectl apply -f k8s/mysql-pv.yaml
+                    kubectl apply -f k8s/mysql-pvc.yaml
+                    kubectl apply -f k8s/mysql-deployment.yaml
+                    kubectl apply -f k8s/mysql-service.yaml
+
+                    echo ""
+                    echo "=== Déploiement Spring Boot ==="
+                    kubectl apply -f k8s/spring-deployment.yaml
+                    kubectl apply -f k8s/spring-service.yaml
+
+                    echo ""
+                    echo "=== Attente du démarrage des pods ==="
+                    sleep 10
+
+                    echo ""
+                    echo "=== État du déploiement ==="
+                    kubectl get pods -n ${NAMESPACE}
+                    kubectl get svc -n ${NAMESPACE}
+                """
+            }
         }
     }
-}
+
+    post {
+        success {
+            echo '✅ =========================================='
+            echo '✅ Pipeline exécuté avec succès!'
+            echo '✅ =========================================='
+            echo "📦 Image Docker: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+            echo "☸️  Namespace Kubernetes: ${NAMESPACE}"
+            echo ""
+            echo "Pour accéder à votre application:"
+            echo "1. vagrant ssh"
+            echo "2. minikube service spring-service -n devops --url"
+        }
+        failure {
+            echo '❌ Le pipeline a échoué.'
+        }
+        always {
+            sh 'docker system prune -f || true'
+        }
     }
 }

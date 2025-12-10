@@ -10,5 +10,5 @@ public interface IFoyerService {
     List<Foyer> getAll();
     Foyer getById(Long id);
     Foyer ajouterFoyerEtAffecterAUniversite(Foyer foyer, long idUniversite);
+    Foyer getFoyerAvecMaxChambres();
 }
-//test 11:53
