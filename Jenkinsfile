@@ -52,7 +52,7 @@ pipeline {
             }
         }
 
-        /* PARTIE KUBERNETES COMMENTÉE - À réactiver plus tard
+         PARTIE KUBERNETES COMMENTÉE - À réactiver plus tard
         stage('5. Construction de l image Docker') {
             steps {
                 echo '🐳 Construction de l image Docker...'
@@ -114,7 +114,7 @@ pipeline {
                 """
             }
         }
-        */
+
     }
 
     post {
