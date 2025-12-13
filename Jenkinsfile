@@ -37,8 +37,20 @@ pipeline {
                 '''
             }
         }
+        stage('4. Analyse SonarQube') {
+                    steps {
+                        echo '📊 Analyse SonarQube...'
+                        withSonarQubeEnv('SonarQube') {
+                            sh '''
+                                mvn clean verify sonar:sonar \
+                                  -Dsonar.projectKey=tp-foyer \
+                                  -Dsonar.projectName="TP Foyer"
+                            '''
+                        }
+                    }
+                }
 
-        stage('4. Construction de l image Docker') {
+        stage('5. Construction de l image Docker') {
             steps {
                 echo '🐳 Construction de l image Docker...'
                 sh """
@@ -50,7 +62,7 @@ pipeline {
             }
         }
 
-        stage('5. Publication sur Docker Hub') {
+        stage('6. Publication sur Docker Hub') {
             steps {
                 echo '📤 Publication sur Docker Hub...'
                 withCredentials([usernamePassword(
@@ -69,7 +81,7 @@ pipeline {
             }
         }
 
-        stage('6. Déploiement sur Kubernetes') {
+        stage('7. Déploiement sur Kubernetes') {
             steps {
                 echo '☸️ Déploiement sur Kubernetes...'
                 sh """
@@ -105,6 +117,7 @@ pipeline {
         success {
             echo '✅ =========================================='
             echo '✅ Pipeline exécuté avec succès!'
+            echo "📊 SonarQube: http://192.168.33.10:9000"
             echo '✅ =========================================='
             echo "📦 Image Docker: ${DOCKER_IMAGE}:${DOCKER_TAG}"
             echo "☸️  Namespace Kubernetes: ${NAMESPACE}"
