@@ -46,6 +46,7 @@ pipeline {
                         mvn clean verify sonar:sonar \
                           -Dsonar.projectKey=tp-foyer \
                           -Dsonar.projectName="TP Foyer" \
+                          -Dsonar.branch.name=master \
                           -DskipTests=true
                     '''
                 }
