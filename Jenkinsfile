@@ -37,6 +37,12 @@ pipeline {
                 '''
             }
         }
+        stage('3. Tests unitaires') {
+                    steps {
+                        echo '🧪 Exécution des tests...'
+                        sh 'mvn test -s settings.xml'
+                    }
+                }
 
         stage('4. Analyse SonarQube') {
             steps {
@@ -51,6 +57,12 @@ pipeline {
                 }
             }
         }
+        stage('4.5. Package et Deploy sur Nexus') {
+                    steps {
+                        echo '📦 Package et déploiement sur Nexus...'
+                        sh 'mvn clean deploy -DskipTests -s settings.xml'
+                    }
+                }
 
         stage('5. Construction de l image Docker') {
             steps {
