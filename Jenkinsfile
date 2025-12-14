@@ -32,8 +32,8 @@ pipeline {
                     echo "=== Structure du projet ==="
                     ls -la
                     echo ""
-                    echo "=== Fichiers pom.xml ==="
-                    ls -la pom.xml || echo "Fichier pom.xml non trouvé"
+                    echo "=== Fichiers Kubernetes ==="
+                    ls -la k8s/ || echo "Dossier k8s/ non trouvé"
                 '''
             }
         }
@@ -53,7 +53,6 @@ pipeline {
             }
         }
 
-         PARTIE KUBERNETES COMMENTÉE - À réactiver plus tard
         stage('5. Construction de l image Docker') {
             steps {
                 echo '🐳 Construction de l image Docker...'
@@ -115,7 +114,6 @@ pipeline {
                 """
             }
         }
-
     }
 
     post {
@@ -124,13 +122,15 @@ pipeline {
             echo '✅ Pipeline exécuté avec succès!'
             echo "📊 SonarQube: http://192.168.33.10:9000"
             echo '✅ =========================================='
+            echo "📦 Image Docker: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+            echo "☸️  Namespace Kubernetes: ${NAMESPACE}"
             echo ""
-            echo "L'analyse SonarQube est terminée."
-            echo "Consultez les résultats sur le serveur SonarQube."
+            echo "Pour accéder à votre application:"
+            echo "1. vagrant ssh"
+            echo "2. minikube service spring-service -n devops --url"
         }
         failure {
             echo '❌ Le pipeline a échoué.'
-            echo "Vérifiez les logs pour identifier le problème."
         }
         always {
             sh 'docker system prune -f || true'
