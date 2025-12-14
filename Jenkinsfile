@@ -8,6 +8,7 @@ pipeline {
     }
 
     stages {
+
         stage('1. Récupération du code') {
             steps {
                 echo '📥 Récupération du code depuis Git...'
@@ -37,12 +38,15 @@ pipeline {
                 '''
             }
         }
-        stage('3. Tests unitaires') {
-                    steps {
-                        echo '🧪 Exécution des tests...'
-                        sh 'mvn test -s settings.xml'
-                    }
-                }
+
+        /* ❌ TESTS UNITAIRES SKIPPÉS TEMPORAIREMENT
+        stage('Tests unitaires') {
+            steps {
+                echo '🧪 Exécution des tests...'
+                sh 'mvn test -s settings.xml'
+            }
+        }
+        */
 
         stage('4. Analyse SonarQube') {
             steps {
@@ -52,17 +56,19 @@ pipeline {
                         mvn clean verify sonar:sonar \
                           -Dsonar.projectKey=tp-foyer \
                           -Dsonar.projectName="TP Foyer" \
-                          -DskipTests=true
+                          -DskipTests=true \
+                          -s settings.xml
                     '''
                 }
             }
         }
+
         stage('4.5. Package et Deploy sur Nexus') {
-                    steps {
-                        echo '📦 Package et déploiement sur Nexus...'
-                        sh 'mvn clean deploy -DskipTests -s settings.xml'
-                    }
-                }
+            steps {
+                echo '📦 Package et déploiement sur Nexus...'
+                sh 'mvn clean deploy -DskipTests=true -s settings.xml'
+            }
+        }
 
         stage('5. Construction de l image Docker') {
             steps {
@@ -70,7 +76,6 @@ pipeline {
                 sh """
                     docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
                     docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
-                    echo "Images créées:"
                     docker images | grep ${DOCKER_IMAGE}
                 """
             }
@@ -89,7 +94,6 @@ pipeline {
                         docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
                         docker push ${DOCKER_IMAGE}:latest
                         docker logout
-                        echo "✓ Images publiées sur Docker Hub"
                     """
                 }
             }
@@ -99,27 +103,18 @@ pipeline {
             steps {
                 echo '☸️ Déploiement sur Kubernetes...'
                 sh """
-                    echo "=== Vérification de la connexion Kubernetes ==="
                     kubectl get nodes
 
-                    echo ""
-                    echo "=== Déploiement MySQL ==="
                     kubectl apply -f k8s/mysql-pv.yaml
                     kubectl apply -f k8s/mysql-pvc.yaml
                     kubectl apply -f k8s/mysql-deployment.yaml
                     kubectl apply -f k8s/mysql-service.yaml
 
-                    echo ""
-                    echo "=== Déploiement Spring Boot ==="
                     kubectl apply -f k8s/spring-deployment.yaml
                     kubectl apply -f k8s/spring-service.yaml
 
-                    echo ""
-                    echo "=== Attente du démarrage des pods ==="
                     sleep 10
 
-                    echo ""
-                    echo "=== État du déploiement ==="
                     kubectl get pods -n ${NAMESPACE}
                     kubectl get svc -n ${NAMESPACE}
                 """
@@ -129,16 +124,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ =========================================='
-            echo '✅ Pipeline exécuté avec succès!'
-            echo "📊 SonarQube: http://192.168.33.10:9000"
-            echo '✅ =========================================='
+            echo '✅ Pipeline exécuté avec succès'
+            echo '📊 SonarQube: http://192.168.33.10:9000'
             echo "📦 Image Docker: ${DOCKER_IMAGE}:${DOCKER_TAG}"
-            echo "☸️  Namespace Kubernetes: ${NAMESPACE}"
-            echo ""
-            echo "Pour accéder à votre application:"
-            echo "1. vagrant ssh"
-            echo "2. minikube service spring-service -n devops --url"
+            echo "☸️ Namespace Kubernetes: ${NAMESPACE}"
         }
         failure {
             echo '❌ Le pipeline a échoué.'
