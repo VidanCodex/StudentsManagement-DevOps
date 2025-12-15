@@ -150,8 +150,36 @@ pipeline {
                 """
             }
         }
+        stage('11. Déploiement Monitoring') {
+                    steps {
+                        echo '📊 Déploiement de Prometheus et Grafana...'
+                        sh """
+                            echo '🔧 Configuration de Prometheus...'
+                            kubectl apply -f k8s/prometheus-config.yaml
 
-        stage('11. Vérification du déploiement') {
+                            echo '📈 Déploiement de Prometheus...'
+                            kubectl apply -f k8s/prometheus-deployment.yaml
+
+                            echo '📊 Déploiement de Grafana...'
+                            kubectl apply -f k8s/grafana-deployment.yaml
+
+                            echo '⏳ Attente du démarrage des services de monitoring...'
+                            kubectl wait --for=condition=ready pod -l app=prometheus -n ${NAMESPACE} --timeout=300s || true
+                            kubectl wait --for=condition=ready pod -l app=grafana -n ${NAMESPACE} --timeout=300s || true
+
+                            sleep 10
+
+                            echo ''
+                            echo '═══════════════════════════════════════'
+                            echo '📊 Services de monitoring déployés:'
+                            echo '═══════════════════════════════════════'
+                            kubectl get pods -n ${NAMESPACE} | grep -E 'prometheus|grafana'
+                            kubectl get svc -n ${NAMESPACE} | grep -E 'prometheus|grafana'
+                        """
+                    }
+                }
+
+        stage('12. Vérification du déploiement') {
             steps {
                 echo '🔍 Vérification finale...'
                 sh """
